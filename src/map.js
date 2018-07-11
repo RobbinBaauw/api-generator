@@ -568,6 +568,9 @@ module.exports = {
   'v-icon': {
     slots: ['default']
   },
+  'v-image': {
+    slots: ['placeholder']
+  },
   'v-layout': {
     props: [
       {
