@@ -634,6 +634,18 @@ module.exports = {
       }
     ]
   },
+  'v-paper': {
+    props: [
+      {
+        "name": "dark",
+        "source": 'themeable'
+      },
+      {
+        "name": "light",
+        "source": 'themeable'
+      }
+    ]
+  },
   'v-parallax': {
     slots: ['default']
   },
