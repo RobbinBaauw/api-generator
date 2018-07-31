@@ -19,10 +19,6 @@ function arrayMerge (a, b) {
 
 Vue.use(Vuetify)
 
-function uppercase (str) {
-  return str.substr(0, 1) + str.slice(1)
-}
-
 function parseFunctionParams (func) {
   const groups = /function\s_.*\((.*)\)\s\{.*/i.exec(func)
   if (groups && groups.length > 1) return `(${groups[1]}) => {}`
@@ -138,31 +134,38 @@ const directives = {}
 const installedComponents = Vue.options._base.options.components
 const installedDirectives = Vue.options._base.options.directives
 
-Object.keys(installedComponents).forEach(name => {
-  if (name.match(/v-/)) {
-    let component = installedComponents[name]
-    if (component.options.$_wrapperFor) {
-      component = Vue.extend(component.options.$_wrapperFor)
-    }
+const hyphenateRE = /\B([A-Z])/g
+const hyphenate = str => {
+  return str.replace(hyphenateRE, '-$1').toLowerCase()
+}
 
-    let options = parseComponent(component.options || component)
+const componentNameRegex = /^(?:V[A-Z]|v-[a-z])/
+for (const name in installedComponents) {
+  if (!componentNameRegex.test(name)) continue
 
-    if (map[name]) {
-      options = deepmerge(options, map[name], { arrayMerge })
-    }
-
-    components[name] = options
+  let component = installedComponents[name]
+  if (component.options.$_wrapperFor) {
+    component = Vue.extend(component.options.$_wrapperFor)
   }
-})
 
-Object.keys(installedDirectives).forEach(key => {
-  if (['ripple', 'resize', 'scroll', 'touch'].includes(key)) {
-    const directive = map[`v-${key}`]
-    directive.type = getPropDefault(directive.default, directive.type)
+  const kebabName = hyphenate(name)
+  let options = parseComponent(component.options || component)
 
-    directives[`v-${key}`] = directive
+  if (map[kebabName]) {
+    options = deepmerge(options, map[kebabName], { arrayMerge })
   }
-})
+
+  components[kebabName] = options
+}
+
+for (const key of ['ripple', 'resize', 'scroll', 'touch']) {
+  if (!installedDirectives[key]) continue
+
+  const vKey = `v-${key}`
+  const directive = map[vKey]
+  directive.type = getPropDefault(directive.default, directive.type)
+  directives[vKey] = directive
+}
 
 function writeApiFile (obj, file) {
   const stream = fs.createWriteStream(file)
