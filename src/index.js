@@ -281,9 +281,16 @@ const vueComponentCreator = () => {
     if (component != '$vuetify') {
       const props = getComponentProps(component, false)
 
+      const componentProps = components[component].props
+
+      let propBinding = ''
+      for (const prop of componentProps) {
+        propBinding += ':' + prop.name + '="' + prop.name + '" \n'
+      }
+
       const content = `
 <template>
-  <${component}></${component}>
+  <${component} ${propBinding}></${component}>
 </template>
 
 <script>
