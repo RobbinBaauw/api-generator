@@ -4,6 +4,8 @@ const fs = require('fs')
 const map = require('./map')
 const deepmerge = require('deepmerge')
 
+const vueComponentFolder = 'dist/vueComp'
+
 function arrayMerge (a, b) {
   const arr = a.slice()
   for (let i = 0; i < b.length; i++) {
@@ -235,14 +237,7 @@ const attributes = Object.keys(components).reduce((attrs, k) => {
   return Object.assign(attrs, tmp)
 }, {})
 
-const fakeComponents = ts => {
-  const imports = [
-    `import Vue from 'vue'`
-  ]
-  if (ts) imports.push(`import { PropValidator } from 'vue/types/options'`)
-  const inspection = ts ? '' : `// noinspection JSUnresolvedFunction\n`
-
-  return `${imports.join('\n')}\n\n` + Object.keys(components).map(component => {
+const getComponentProps = (component, ts) => {
     const propType = type => {
       if (type === 'any' || typeof type === 'undefined') return ts ? 'null as any as PropValidator<any>' : 'null'
       if (Array.isArray(type)) return `[${type.map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(',')}]`
@@ -256,8 +251,53 @@ const fakeComponents = ts => {
     })
     let props = componentProps.map(prop => `    ${quoteProp(prop.name)}: ${propType(prop.type)}`).join(',\n')
     if (props) props = `\n  props: {\n${props}\n  }\n`
+
+    return props
+}
+
+const fakeComponents = ts => {
+  const imports = [
+    `import Vue from 'vue'`
+  ]
+  if (ts) imports.push(`import { PropValidator } from 'vue/types/options'`)
+  const inspection = ts ? '' : `// noinspection JSUnresolvedFunction\n`
+
+  return `${imports.join('\n')}\n\n` + Object.keys(components).map(component => {
+
+    const props = getComponentProps(component, ts)
+
     return `${inspection}Vue.component('${component}', {${props}})`
   }).join('\n')
+}
+
+const vueComponentCreator = () => {
+
+  if (!fs.existsSync(vueComponentFolder)){
+    fs.mkdirSync(vueComponentFolder);
+  }
+
+  Object.keys(components).map(component => {
+
+    if (component != '$vuetify') {
+      const props = getComponentProps(component, false)
+
+      const content = `
+<template>
+  <${component}></${component}>
+</template>
+
+<script>
+  export default {
+    name: "${component}",
+    ${props}
+  }
+</script>
+
+<style>@import url('../node_modules/vuetify/dist/vuetify.min.css');</style>
+    `
+      writePlainFile(content, vueComponentFolder + '/' + component + '.vue')
+    }
+  })
 }
 
 writeJsonFile(tags, 'dist/tags.json')
@@ -268,3 +308,5 @@ writePlainFile(fakeComponents(true), 'dist/fakeComponents.ts')
 components['$vuetify'] = map['$vuetify']
 
 writeApiFile({ ...components, ...directives }, 'dist/api.js')
+
+vueComponentCreator()
