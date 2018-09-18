@@ -237,14 +237,19 @@ const attributes = Object.keys(components).reduce((attrs, k) => {
   return Object.assign(attrs, tmp)
 }, {})
 
-const getComponentProps = (component, ts) => {
+const getComponentProps = (component, ts, isForVueComponent = false) => {
     const propType = type => {
       if (type === 'any' || typeof type === 'undefined') return ts ? 'null as any as PropValidator<any>' : 'null'
       if (Array.isArray(type)) return `[${type.map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(',')}]`
       return type.charAt(0).toUpperCase() + type.slice(1)
     }
-    const quoteProp = name => name.match(/-/) ? `'${name}'` : name
     const componentProps = components[component].props
+    const quoteProp = name => name.match(/-/) ? `'${name}'` : name
+
+    if (isForVueComponent) {
+        checkPropType(componentProps)
+    }
+
     componentProps.sort((a, b) => {
       if (a.name < b.name) return -1;
       return a.name === b.name ? 0 : 1;
@@ -264,10 +269,38 @@ const fakeComponents = ts => {
 
   return `${imports.join('\n')}\n\n` + Object.keys(components).map(component => {
 
-    const props = getComponentProps(component, ts)
+    const props = getComponentProps(component, ts, false)
 
     return `${inspection}Vue.component('${component}', {${props}})`
   }).join('\n')
+}
+
+const appendType = (inputProp, componentProps, newStr, types) => {
+    const outputObjs = [];
+    for (const type of types) {
+        let currObj = JSON.parse(JSON.stringify(inputProp))
+        currObj.name = newStr + type
+        outputObjs.push(currObj)
+    }
+
+    componentProps.splice(componentProps.findIndex(x => x.name === inputProp.name), 1)
+    componentProps.push(...outputObjs)
+}
+
+const checkPropType = (componentProps) => {
+
+    const sizetypes = ['xs', 'sm', 'md', 'lg', 'xl']
+    const displaytypes = ['flex', 'inline-flex', 'inline-block', 'block', 'inline']
+
+    for (const prop of componentProps) {
+        if (prop.name == 'grid-list-{xs through xl}') {
+            appendType(prop, componentProps, 'grid-list-', sizetypes)
+        } else if (prop.name == 'd-{type}') {
+            appendType(prop, componentProps, 'd-', displaytypes)
+        } else if (prop.name == 'for') {
+            appendType(prop, componentProps, 'forVariable', [''])
+        }
+    }
 }
 
 const vueComponentCreator = () => {
@@ -279,9 +312,10 @@ const vueComponentCreator = () => {
   Object.keys(components).map(component => {
 
     if (component != '$vuetify') {
-      const props = getComponentProps(component, false)
-
+      const props = getComponentProps(component, false, true)
       const componentProps = components[component].props
+
+      checkPropType(componentProps)
 
       let propBinding = ''
       for (const prop of componentProps) {
@@ -290,12 +324,12 @@ const vueComponentCreator = () => {
 
       const content = `
 <template>
-  <${component} ${propBinding}></${component}>
+  <${component} ${propBinding}><slot></slot></${component}>
 </template>
 
 <script>
   export default {
-    name: "${component}",
+    name: "${component}-component",
     ${props}
   }
 </script>
