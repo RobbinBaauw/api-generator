@@ -293,11 +293,11 @@ const checkPropType = (componentProps) => {
     const displaytypes = ['flex', 'inline-flex', 'inline-block', 'block', 'inline']
 
     for (const prop of componentProps) {
-        if (prop.name == 'grid-list-{xs through xl}') {
+        if (prop.name === 'grid-list-{xs through xl}') {
             appendType(prop, componentProps, 'grid-list-', sizetypes)
-        } else if (prop.name == 'd-{type}') {
+        } else if (prop.name === 'd-{type}') {
             appendType(prop, componentProps, 'd-', displaytypes)
-        } else if (prop.name == 'for') {
+        } else if (prop.name === 'for') {
             appendType(prop, componentProps, 'forVariable', [''])
         }
     }
@@ -311,11 +311,22 @@ const vueComponentCreator = () => {
 
   Object.keys(components).map(component => {
 
-    if (component != '$vuetify') {
+    if (component !== '$vuetify') {
       const props = getComponentProps(component, false, true)
       const componentProps = components[component].props
 
       checkPropType(componentProps)
+
+      let propTexts = "props: ['";
+      for (let i = 0; i < componentProps.length; i++) {
+        propTexts += componentProps[i].name
+        if (i != (componentProps.length - 1)) {
+          propTexts += "', '"
+        } else {
+          propTexts += "'"
+        }
+      }
+      propTexts += ']'
 
       let propBinding = ''
       for (const prop of componentProps) {
@@ -330,7 +341,7 @@ const vueComponentCreator = () => {
 <script>
   export default {
     name: "${component}-component",
-    ${props}
+    ${propTexts}
   }
 </script>
 
