@@ -322,11 +322,9 @@ const vueComponentCreator = () => {
         propTexts += componentProps[i].name
         if (i != (componentProps.length - 1)) {
           propTexts += "', '"
-        } else {
-          propTexts += "'"
         }
       }
-      propTexts += ']'
+      propTexts += "']"
 
       let propBinding = ''
       for (const prop of componentProps) {
