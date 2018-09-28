@@ -16,6 +16,9 @@
     "babel-preset-env": "^1.6.1",
     "deepmerge": "^2.1.1",
     "vue": "^2.5.16",
-    "vuetify": "^1.0.18"
+    "vuetify": "^1.0.18",
+    "@vue/cli-service": "^3.0.4",
+    "vue-cli-plugin-vuetify": "^0.2.0",
+    "vue-template-compiler": "^2.5.17"
   }
 }

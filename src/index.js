@@ -275,12 +275,21 @@ const fakeComponents = ts => {
   }).join('\n')
 }
 
-const appendType = (inputProp, componentProps, newStr, types) => {
+const appendType = (inputProp, componentProps, newStr, types, appendtypes) => {
     const outputObjs = [];
     for (const type of types) {
         let currObj = JSON.parse(JSON.stringify(inputProp))
-        currObj.name = newStr + type
+
+        if (appendtypes != null) {
+            for (const appendType of appendtypes) {
+                currObj.name = newStr + type + appendType
+            }
+        } else {
+            currObj.name = newStr + type
+        }
+
         outputObjs.push(currObj)
+
     }
 
     componentProps.splice(componentProps.findIndex(x => x.name === inputProp.name), 1)
@@ -290,15 +299,22 @@ const appendType = (inputProp, componentProps, newStr, types) => {
 const checkPropType = (componentProps) => {
 
     const sizetypes = ['xs', 'sm', 'md', 'lg', 'xl']
+    const numbers = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
     const displaytypes = ['flex', 'inline-flex', 'inline-block', 'block', 'inline']
 
     for (const prop of componentProps) {
         if (prop.name === 'grid-list-{xs through xl}') {
-            appendType(prop, componentProps, 'grid-list-', sizetypes)
+            appendType(prop, componentProps, 'grid-list-', sizetypes, null)
         } else if (prop.name === 'd-{type}') {
-            appendType(prop, componentProps, 'd-', displaytypes)
+            appendType(prop, componentProps, 'd-', displaytypes, null)
         } else if (prop.name === 'for') {
-            appendType(prop, componentProps, 'forVariable', [''])
+            appendType(prop, componentProps, 'forVariable', [''], null)
+        } else if (prop.name === '(size)(1-12)') {
+            appendType(prop, componentProps, '', sizetypes, numbers.slice(1))
+        } else if (prop.name === 'offset-(size)(0-12)') {
+            appendType(prop, componentProps, 'offset-', sizetypes, numbers)
+        } else if (prop.name === 'order-(size)(0-12)') {
+            appendType(prop, componentProps, 'order-', sizetypes, numbers)
         }
     }
 }
@@ -343,7 +359,7 @@ const vueComponentCreator = () => {
   }
 </script>
 
-<style>@import url('../node_modules/vuetify/dist/vuetify.min.css');</style>
+<style>@import url('../../node_modules/vuetify/dist/vuetify.min.css');</style>
     `
       writePlainFile(content, vueComponentFolder + '/' + component + '.vue')
     }
